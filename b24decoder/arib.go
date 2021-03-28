@@ -66,10 +66,8 @@ func (arr *AribArray) convert(idx int) bool {
 
 	if code.Size == 2 {
 		skip = true
-		if idx+2 < len(arr.ByteArray) {
+		if idx+1 < len(arr.ByteArray) {
 			b2 = arr.ByteArray[idx+1]
-		} else {
-			b2 = 0x0
 		}
 	}
 	if b1 >= 0xa1 && b1 <= 0xfe {
