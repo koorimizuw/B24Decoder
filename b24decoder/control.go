@@ -49,10 +49,13 @@ func (c *CodeSetContoller) degignate(code byte) {
 func (c *CodeSetContoller) getCurrentCode(b byte) Code {
 	if b >= 0x21 && b <= 0x7e {
 		if c.SingleShift != "" {
+			code := c.Buffer[c.SingleShift]
 			c.SingleShift = ""
-			return c.Buffer[c.SingleShift]
+			return code
 		}
 		return c.Buffer[c.GraphicLeft]
+	} else if b >= 0xa1 && b <= 0xfe {
+		return c.Buffer[c.GraphicRight]
 	}
-	return c.Buffer[c.GraphicRight]
+	return Code{}
 }

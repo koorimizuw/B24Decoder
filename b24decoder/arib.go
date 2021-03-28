@@ -1,6 +1,8 @@
 package b24decoder
 
-import "reflect"
+import (
+	"reflect"
+)
 
 type (
 	AribArray struct {
@@ -49,7 +51,7 @@ func (arr *AribArray) toString() {
 }
 
 func (arr *AribArray) appendByte(escapeSequence []byte, char ...byte) {
-	if reflect.DeepEqual(arr.Control.EscapeSequence, escapeSequence) {
+	if !reflect.DeepEqual(arr.Control.EscapeSequence, escapeSequence) {
 		arr.JisArray = append(arr.JisArray, escapeSequence...)
 		arr.Control.EscapeSequence = escapeSequence
 	}
@@ -78,36 +80,32 @@ func (arr *AribArray) convert(idx int) bool {
 	switch code.Code {
 	// Kanji
 	case KANJI, JIS_KANJI_PLANE_1, JIS_KANJI_PLANE_2:
-		arr.JisArray = append(arr.JisArray, ESC_SEQ_ZENKAKU...)
-		arr.JisArray = append(arr.JisArray, b1, b2)
+		arr.appendByte(ESC_SEQ_ZENKAKU, b1, b2)
 	// Alphabet
 	case ALPHANUMERIC, PROP_ALPHANUMERIC:
-		arr.JisArray = append(arr.JisArray, ESC_SEQ_ASCII...)
-		arr.JisArray = append(arr.JisArray, b1)
+		arr.appendByte(ESC_SEQ_ASCII, b1)
 	// Hiragana
 	case HIRAGANA, PROP_HIRAGANA:
-		arr.JisArray = append(arr.JisArray, ESC_SEQ_ZENKAKU...)
 		if b1 >= 0x77 {
-			arr.JisArray = append(arr.JisArray, 0x21, ARIB_HIRAGANA_MAP[b1])
+			arr.appendByte(ESC_SEQ_ZENKAKU, 0x21, ARIB_HIRAGANA_MAP[b1])
 		} else {
-			arr.JisArray = append(arr.JisArray, 0x24, b1)
+			arr.appendByte(ESC_SEQ_ZENKAKU, 0x24, b1)
 		}
 	// Katakana
 	case KATAKANA, PROP_KATAKANA:
-		arr.JisArray = append(arr.JisArray, ESC_SEQ_ZENKAKU...)
 		if b1 >= 0x77 {
-			arr.JisArray = append(arr.JisArray, 0x21, ARIB_KATAKANA_MAP[b1])
+			arr.appendByte(ESC_SEQ_ZENKAKU, 0x21, ARIB_KATAKANA_MAP[b1])
 		} else {
-			arr.JisArray = append(arr.JisArray, 0x25, b1)
+			arr.appendByte(ESC_SEQ_ZENKAKU, 0x25, b1)
 		}
 	// Hankaku katakana
 	case JIS_X0201_KATAKANA:
-		arr.JisArray = append(arr.JisArray, ESC_SEQ_HANKAKU...)
-		arr.JisArray = append(arr.JisArray, b1)
+		arr.appendByte(ESC_SEQ_HANKAKU, b1)
 	// Arib gaiji
 	case ADDITIONAL_SYMBOLS:
 		arr.toString()
 		arr.JisArray = []byte{}
+		arr.Control.EscapeSequence = []byte{}
 		arr.String += GAIJI_MAP[(int(b1)<<8)+int(b2)]
 	}
 
@@ -120,7 +118,7 @@ func (arr *AribArray) control(b byte) {
 		arr.Control.invoke(G0, GL, true) // LS0
 	case 0x0e:
 		arr.Control.invoke(G1, GL, true) // LS1
-	case 0x019:
+	case 0x19:
 		arr.Control.invoke(G2, GL, false) // SS2
 	case 0x1d:
 		arr.Control.invoke(G3, GL, false) // SS3
@@ -151,6 +149,8 @@ func (arr *AribArray) escape(b byte) {
 			arr.Control.setEscape(G2, false)
 		case 0x2b:
 			arr.Control.setEscape(G3, false)
+		default:
+			panic("Escape error!")
 		}
 	case 2:
 		switch b {
